@@ -1,0 +1,207 @@
+#!/usr/bin/env perl
+#
+# Name       : phosphor
+# Author     : René Uittenbogaard
+# Description: display text like on a phosphorescent CRT terminal
+#              By default, the text is converted to uppercase.
+#
+# Usage      : phosphor [ -d | --delay <delay> ]
+#                       [ -l | --lowercase | -n | --normalcase | -s | --smartcase ]
+#                       [ --demo ] [ <filename> ]
+#
+#              -d : delay in seconds between words (default: 0.03)
+#              -l : convert text to lowercase
+#              -n : no case conversion (default: convert to uppercase)
+#              -s : convert text to "smart case" (i.e. upper -> underscored; lower -> upper)
+#              --demo : use demo text (default: read text from stdin or <filename>)
+#
+
+use strict;
+use warnings;
+use diagnostics;
+#use utf8;
+use IO::Handle;
+use Getopt::Long;
+use Time::HiRes qw(sleep);
+
+################################################################################
+# declarations
+
+my $NORMAL   = `tput sgr0` || "\e[m";
+my $SMUL     = `tput smul` || "\e[4m";
+my $RMUL     = `tput rmul` || "\e[24m";
+my $BOLD     = `tput bold` || "\e[1m";
+my $REVERSE  = `tput rev`  || "\e[7m";
+my $BLACK    = "\e[30m";
+my $GREEN    = "\e[32m";
+my $ON_BLACK = "\e[40m";
+my $ON_GREEN = "\e[42m";
+my $COLUMNS;
+
+################################################################################
+# functions
+
+sub usage {
+	my $error = shift;
+	my @usage = <<"	_endUsage_";
+Usage:
+       	phosphor [ -d | --delay <delay> ]
+		 [ { -c | --case } { lower | upper | normal | underscore | reverse } ]
+       		 [ --demo ] [ <filename> ]
+       	
+       	 -d : delay in seconds (default: 0.03)
+       	 -l : convert text to lowercase
+       	 -n : no case conversion (default: convert to uppercase)
+       	 -s : convert text to "smart case" (i.e. upper -> underscored; lower -> upper)
+       	 --demo : use demo text (default: read text from stdin or <filename>)
+		
+	_endUsage_
+	if ($error) {
+		warn $error;
+		die @usage;
+	} else {
+		print @usage;
+	}
+}
+
+sub getopts {
+	my $delay      = 0.03;
+	my $lowercase  = 0;
+	my $normalcase = 0;
+	my $smartcase  = 0;
+	my $revcase    = 0;
+	my $demo;
+	GetOptions(
+		'delay|d=f'  => \$delay,
+		'demo'       => \$demo,
+		'case=s'     => \$case,
+		'lowercase'  => \$lowercase,
+		'normalcase' => \$normalcase,
+		'smartcase'  => \$smartcase,
+		'revcase'    => \$revcase,
+	) or usage("Error in command line arguments\n");
+	if ($lowercase + $normalcase + $smartcase + $revcase > 1) {
+		usage("Error: -l, -n, -r and -s options are mutually exclusive\n");
+	}
+	if ($delay =~ /[^\d.]/) {
+		usage("Error: -d requires a real number\n");
+	}
+	my $case = $lowercase
+		? 'lower'
+		: $normalcase
+		? 'normal'
+		: $smartcase
+		? 'smart'
+		: $revcase
+		? 'reverse'
+		: 'upper';
+	return {
+		delay => $delay,
+		demo => $demo,
+		case => $case,
+	};
+}
+
+sub resizer {
+	$COLUMNS = `tput cols`;
+	$SIG{WINCH} = *resizer;
+}
+
+sub uluc {
+	my ($text) = @_;
+	$text =~ s/(.)/
+		$1 eq lc($1) ? uc($1) : "$SMUL$1$RMUL"
+	/eg;
+	return $text;
+}
+
+sub revuc {
+	my ($text) = @_;
+	$text =~ s/(.)/
+		$1 eq lc($1) ? uc($1) : "$BLACK$ON_GREEN$1$GREEN$ON_BLACK"
+	/eg;
+	return $text;
+}
+
+sub cased {
+	my ($type, $text) = @_;
+	return $type eq 'upper'
+		? uc($text)
+		: $type eq 'lower'
+		? lc($text)
+		: $type eq 'smart'
+		? uluc($text)
+		: $type eq 'reverse'
+		? revuc($text)
+		: $text;
+}
+
+sub flash {
+	my $case = shift;
+	my $old = cased $case, shift;
+	my $new = cased $case, shift;
+	my $delay = shift;
+	print "\r$NORMAL$GREEN$ON_BLACK$old$BOLD$new";
+	sleep $delay;
+	print "\r$NORMAL$GREEN$ON_BLACK$old$new";
+}
+
+sub phosphorize {
+	my ($opts) = @_;
+	if ($opts->{demo}) {
+		*SOURCE = *DATA;
+	} else {
+		*SOURCE = *ARGV;
+	}
+	while (<SOURCE>) {
+		s/\e\[([0-9]{1,2}(;[0-9]{1,2})*)?[m|K]//g; # remove color escapes
+		s/[\r\n]//g; # remove CR and LF
+		# print word by word
+		my $line = '';
+		while (/((.+?)(\s+|$))/g) {
+			my ($match, $text, $space) = ($1, $2, $3);
+			# if the matched text does not fit on the current line, advance to the next line
+			if (length($line) + length($match) > $COLUMNS) {
+				$line = '';
+				print "\n";
+			}
+			# if the matched text is longer than one line, just chop it up
+			while (length($match) > $COLUMNS) {
+				flash $opts->{case}, '', substr($match, 0, $COLUMNS), $opts->{delay};
+				print "\n";
+				$match = substr($match, $COLUMNS);
+			}
+			flash $opts->{case}, $line, $match, $opts->{delay};
+			$line .= $match;
+		}
+		print "\n";
+	}
+	close SOURCE;
+}
+
+END {
+	print $NORMAL;
+}
+
+sub main {
+	my $opts = getopts();
+	resizer();
+	STDOUT->autoflush(1);
+	phosphorize($opts);
+	STDOUT->autoflush(0);
+}
+
+################################################################################
+# main
+
+main();
+
+################################################################################
+# demo text
+
+__DATA__
+
+There are those who believe that life here began out there, far across the universe.  With tribes of humans who may have been the forefathers of the Egyptians, or the Toltecs, or the Mayans.  That they may have been the architects of the Great Pyramids, or the lost civilizations of Lemuria, or Atlantis.  Some believe that there may yet be brothers of man, who even now fight to survive... somewhere beyond the heavens.
+
+Fleeing from the Cylon tyranny, the last battlestar, Galactica, leads a rag-tag fugitive fleet on a lonely quest: a shining planet, known as Earth.
+
