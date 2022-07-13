@@ -139,7 +139,7 @@
 .if n .ad l
 .nh
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.90
+.ds Vw @(#) phosphor 0.91
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -152,7 +152,8 @@ phosphor \- display text like on a phosphorescent CRT terminal
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .ad l \" align left
-\&\f(CW\*(C`phosphor [ { \-c | \-\-case } \*(C'\fR\fIstyle\fR\f(CW\*(C` ] [ \-d | \-\-delay\*(C'\fR\fI delay\fR\f(CW\*(C` ]\*(C'\fR
+\&\f(CW\*(C`phosphor [ \-b | \-\-blink \*(C'\fR\fIdelay\fR\f(CW\*(C` ] [ { \-c | \-\-case } \*(C'\fR\fIstyle\fR\f(CW\*(C` ]\*(C'\fR
+\&\f(CW\*(C`[\ \-d\ |\ \-\-delay\ \*(C'\fR\fIdelay\fR\f(CW\*(C`\ ]\*(C'\fR
 \&\f(CW\*(C`[\ \-\-demo\ ]\ [\ \*(C'\fR\fIfilename\fR\f(CW\*(C`\ [\ \*(C'\fR\fIfilename\ ...\fR\f(CW\*(C`\ ]\ ]\*(C'\fR
 .ad n \" align normal
 .SH "DESCRIPTION"
@@ -163,6 +164,10 @@ By default, the text is converted to uppercase.
 Text can be read from files or from standard input.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
+.IP "\fB\-b\fR \fIdelay\fR, \fB\-\-blink\fR \fIdelay\fR" 4
+.IX Item "-b delay, --blink delay"
+The delay in (fractional) seconds between cursor blinks after a comma (default: 0.1).
+The blink delay is doubled for a full stop, question mark and exclamation mark.
 .IP "\fB\-c\fR \fIstyle\fR, \fB\-\-case\fR \fIstyle\fR" 4
 .IX Item "-c style, --case style"
 Case mapping of letters. \fIstyle\fR can be one of:
@@ -172,23 +177,22 @@ Case mapping of letters. \fIstyle\fR can be one of:
 All characters are mapped to lowercase.
 .IP "u | upper" 4
 .IX Item "u | upper"
-All characters are mapped to uppercase.
+All characters are mapped to uppercase.  This is the default.
 .IP "n | normal" 4
 .IX Item "n | normal"
 No case conversion is done.
 .IP "r | reverse" 4
 .IX Item "r | reverse"
 Uppercase characters are displayed in inverse; lowercase characters are mapped to uppercase.
-.IP "u | underscore" 4
-.IX Item "u | underscore"
+.IP "s | underscore" 4
+.IX Item "s | underscore"
 Uppercase characters are underscored; lowercase characters are mapped to uppercase.
-This is the default.
 .RE
 .RS 4
 .RE
 .IP "\fB\-d\fR \fIdelay\fR, \fB\-\-delay\fR \fIdelay\fR" 4
 .IX Item "-d delay, --delay delay"
-The delay in (fractional) seconds between words (default: 0.03)
+The delay in (fractional) seconds between printing words (default: 0.05)
 .IP "\fB\-\-demo\fR" 4
 .IX Item "--demo"
 Use a fixed demo text. No other input will be read.

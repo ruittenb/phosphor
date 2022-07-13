@@ -2,22 +2,11 @@
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
-# Version    : 0.90
+# Version    : 0.91
 # Description: display text like on a phosphorescent CRT terminal
 #              By default, the text is converted to uppercase.
 #
-# Usage      : phosphor [ -d | --delay <delay> ]
-#                       [ { -c | --case } { lower | upper | normal | underscore | reverse } ]
-#                       [ --demo ] [ <filename> ]
-#
-#              --delay : delay in seconds between words (default: 0.03)
-#              --case  : specify case conversion:
-#                          l | lower      : to lowercase
-#                          u | upper      : to uppercase (default)
-#                          n | normal     : no case conversion
-#                          s | underscore : upper -> underscored; lower -> upper
-#                          r | reverse    : upper -> reverse; lower -> upper
-#              --demo  : use demo text (default: read text from stdin or <filename>)
+# Usage      : see manual
 #
 
 ############################################################################
@@ -27,7 +16,7 @@
 
 =for roff
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.90
+.ds Vw @(#) phosphor 0.91
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -49,11 +38,13 @@ use Term::ANSIColor;
 ################################################################################
 # declarations
 
-my $NORMAL   = `tput sgr0` || "\e[m";
-my $SMUL     = `tput smul` || "\e[4m";
-my $RMUL     = `tput rmul` || "\e[24m";
-my $BOLD     = `tput bold` || "\e[1m";
-my $REVERSE  = `tput rev`  || "\e[7m";
+my $NORMAL   = `tput sgr0`  || "\e[m";
+my $SMUL     = `tput smul`  || "\e[4m";
+my $RMUL     = `tput rmul`  || "\e[24m";
+my $BOLD     = `tput bold`  || "\e[1m";
+my $REVERSE  = `tput rev`   || "\e[7m";
+my $CNORM    = `tput cnorm` || "\e[?12l\e[?25h";
+my $CIVIS    = `tput civis` || "\e[?25l";
 my $BLACK    = "\e[30m";
 my $GREEN    = "\e[32m";
 my $ON_BLACK = "\e[40m";
@@ -77,11 +68,12 @@ sub usage {
 	my $error = shift;
 	my @usage = <<"	_endUsage_";
 Usage:
-	phosphor [ -d | --delay <delay> ]
+	phosphor [ -b | --blink <delay> ] [ -d | --delay <delay> ]
 		 [ { -c | --case } { lower | upper | normal | underscore | reverse } ]
 		 [ --demo ] [ <filename> ]
 	
-	-d|--delay : delay in seconds between words (default: 0.03)
+	-b|--blink : cursor blink delay after full stop etc., in seconds (default: 0.1s)
+	-d|--delay : print delay between words, in seconds (default: 0.05s)
 	-c|--case  : specify case conversion:
 	            l | lower      : to lowercase
 	            u | upper      : to uppercase (default)
@@ -100,10 +92,12 @@ Usage:
 }
 
 sub getopts {
-	my $delay = 0.03;
+	my $delay = 0.05;
+    my $blink = 0.1;
 	my $case  = 'upper';
 	my $demo;
 	GetOptions(
+		'blink|b=f'  => \$blink,
 		'delay|d=f'  => \$delay,
 		'demo'       => \$demo,
 		'case=s'     => \$case,
@@ -115,10 +109,16 @@ sub getopts {
 		usage("Error: -d requires a real number\n");
 	}
 	return {
+		blink => $blink,
 		delay => $delay,
 		demo => $demo,
 		case => $CASES{$case},
 	};
+}
+
+sub interrupt_handler {
+    # force the application to end through the END block when interrupted
+    $SIG{INT} = sub { exit 1; };
 }
 
 sub resizer {
@@ -157,12 +157,27 @@ sub cased {
 
 sub flash {
 	my $case = shift;
-	my $old = cased $case, shift;
-	my $new = cased $case, shift;
+	my $leader = cased $case, shift;
+	my $text = cased $case, shift;
 	my $delay = shift;
-	print "\r$NORMAL$GREEN$ON_BLACK$old$BOLD$new";
+	my $blink = shift;
+	print "\r$NORMAL$GREEN$ON_BLACK$leader$BOLD$text";
 	sleep $delay;
-	print "\r$NORMAL$GREEN$ON_BLACK$old$new";
+	print "\r$NORMAL$GREEN$ON_BLACK$leader$text";
+    my ($punct) = ($text =~ /([.,!?])\s+$/);
+    if ($punct) {
+        sleep $blink; print $CIVIS;
+        sleep $blink; print $CNORM;
+        if ($punct ne ',') {
+            sleep $blink; print $CIVIS;
+            sleep $blink; print $CNORM;
+        }
+    }
+}
+
+sub flashtext {
+    my ($leader, $text, $opts) = @_;
+    flash $opts->{case}, $leader, $text, $opts->{delay}, $opts->{blink};
 }
 
 sub phosphorize {
@@ -186,11 +201,11 @@ sub phosphorize {
 			}
 			# if the matched text is longer than one line, just chop it up
 			while (length($match) > $COLUMNS) {
-				flash $opts->{case}, '', substr($match, 0, $COLUMNS), $opts->{delay};
+                flashtext '', substr($match, 0, $COLUMNS), $opts;
 				print "\n";
 				$match = substr($match, $COLUMNS);
 			}
-			flash $opts->{case}, $line, $match, $opts->{delay};
+            flashtext $line, $match, $opts;
 			$line .= $match;
 		}
 		print "\n";
@@ -199,11 +214,12 @@ sub phosphorize {
 }
 
 END {
-	print $NORMAL;
+	print $NORMAL, $CNORM;
 }
 
 sub main {
 	my $opts = getopts();
+    interrupt_handler();
 	resizer();
 	STDOUT->autoflush(1);
 	phosphorize($opts);
@@ -238,7 +254,8 @@ B<phosphor> - display text like on a phosphorescent CRT terminal
 =for roff
 .ad l \" align left
 
-C<phosphor [ { -c | --case } >I<style>C< ] [ -d | --delay>I< delay>C< ]>
+C<phosphor [ -b | --blink >I<delay>C< ] [ { -c | --case } >I<style>C< ]>
+S<< C<[ -d | --delay >I<delay>C< ]> >>
 S<< C<[ --demo ] [ >I<filename>C< [ >I<filename ...>C< ] ]> >>
 
 =for roff
@@ -255,6 +272,11 @@ Text can be read from files or from standard input.
 
 =over 4
 
+=item B<-b> I<delay>, B<--blink> I<delay>
+
+The delay in (fractional) seconds between cursor blinks after a comma (default: 0.1).
+The blink delay is doubled for a full stop, question mark and exclamation mark.
+
 =item B<-c> I<style>, B<--case> I<style>
 
 Case mapping of letters. I<style> can be one of:
@@ -267,7 +289,7 @@ All characters are mapped to lowercase.
 
 =item u | upper
 
-All characters are mapped to uppercase.
+All characters are mapped to uppercase.  This is the default.
 
 =item n | normal
 
@@ -277,16 +299,15 @@ No case conversion is done.
 
 Uppercase characters are displayed in inverse; lowercase characters are mapped to uppercase.
 
-=item u | underscore
+=item s | underscore
 
 Uppercase characters are underscored; lowercase characters are mapped to uppercase.
-This is the default.
 
 =back
 
 =item B<-d> I<delay>, B<--delay> I<delay>
 
-The delay in (fractional) seconds between words (default: 0.03)
+The delay in (fractional) seconds between printing words (default: 0.05)
 
 =item B<--demo>
 
