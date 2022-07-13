@@ -24,6 +24,10 @@ mandoc: $(PROG).pdf ## Generate manpage (ps and pdf format)
 readman: $(PROG).$(SECTION) ## Display the manpage
 	man ./$(PROG).$(SECTION)
 
+.PHONY: mandemo
+mandemo: $(PROG).$(SECTION) ## Animate the manpage
+	@man ./$(PROG).$(SECTION) | ./phosphor -c r -br 0
+
 $(PROG).$(SECTION): $(PROG)
 	pod2man $(PODOPTS) $< | sed 's/@(#)ms.acc/ms.acc/' > $@
 
