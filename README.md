@@ -7,7 +7,7 @@ This was inspired by the system shown on
 [Battlestar Galactica 1978](http://battlestar.popapostle.com/html/episodes/BSG70/The-Man-With-Nine-Lives.htm),
 when commander Adama records his journal.
 
-![Adama's Journal](demo/Adamas-journal.jpg)
+![Adama's Journal](demo/Adamas-Journal.jpg)
 
 ## Installing:
 
