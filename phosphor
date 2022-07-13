@@ -2,27 +2,49 @@
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
+# Version    : 0.90
 # Description: display text like on a phosphorescent CRT terminal
 #              By default, the text is converted to uppercase.
 #
 # Usage      : phosphor [ -d | --delay <delay> ]
-#                       [ -l | --lowercase | -n | --normalcase | -s | --smartcase ]
+#                       [ { -c | --case } { lower | upper | normal | underscore | reverse } ]
 #                       [ --demo ] [ <filename> ]
 #
-#              -d : delay in seconds between words (default: 0.03)
-#              -l : convert text to lowercase
-#              -n : no case conversion (default: convert to uppercase)
-#              -s : convert text to "smart case" (i.e. upper -> underscored; lower -> upper)
-#              --demo : use demo text (default: read text from stdin or <filename>)
+#              --delay : delay in seconds between words (default: 0.03)
+#              --case  : specify case conversion:
+#                          l | lower      : to lowercase
+#                          u | upper      : to uppercase (default)
+#                          n | normal     : no case conversion
+#                          s | underscore : upper -> underscored; lower -> upper
+#                          r | reverse    : upper -> reverse; lower -> upper
+#              --demo  : use demo text (default: read text from stdin or <filename>)
 #
+
+############################################################################
+# version info for *roff
+
+=pod
+
+=for roff
+.ds Yr 2020-2022
+.ds Vw @(#) phosphor 0.90
+.de Vp
+This manual pertains to \fBphosphor\fP version \\$3.
+..
+
+=cut
+
+############################################################################
+# prerequisites
 
 use strict;
 use warnings;
-use diagnostics;
+#use diagnostics;
 #use utf8;
 use IO::Handle;
 use Getopt::Long;
 use Time::HiRes qw(sleep);
+use Term::ANSIColor;
 
 ################################################################################
 # declarations
@@ -38,6 +60,16 @@ my $ON_BLACK = "\e[40m";
 my $ON_GREEN = "\e[42m";
 my $COLUMNS;
 
+my %CASES = qw(
+	l lower
+	u upper
+	n normal
+	s underscore
+	r reverse
+);
+
+@CASES{values %CASES} = values %CASES;
+
 ################################################################################
 # functions
 
@@ -45,16 +77,19 @@ sub usage {
 	my $error = shift;
 	my @usage = <<"	_endUsage_";
 Usage:
-       	phosphor [ -d | --delay <delay> ]
+	phosphor [ -d | --delay <delay> ]
 		 [ { -c | --case } { lower | upper | normal | underscore | reverse } ]
-       		 [ --demo ] [ <filename> ]
-       	
-       	 -d : delay in seconds (default: 0.03)
-       	 -l : convert text to lowercase
-       	 -n : no case conversion (default: convert to uppercase)
-       	 -s : convert text to "smart case" (i.e. upper -> underscored; lower -> upper)
-       	 --demo : use demo text (default: read text from stdin or <filename>)
-		
+		 [ --demo ] [ <filename> ]
+	
+	-d|--delay : delay in seconds between words (default: 0.03)
+	-c|--case  : specify case conversion:
+	            l | lower      : to lowercase
+	            u | upper      : to uppercase (default)
+	            n | normal     : no case conversion
+	            s | underscore : upper -> underscored; lower -> upper
+	            r | reverse    : upper -> reverse; lower -> upper
+	--demo     : use demo text (default: read text from stdin or <filename>)
+	
 	_endUsage_
 	if ($error) {
 		warn $error;
@@ -65,40 +100,24 @@ Usage:
 }
 
 sub getopts {
-	my $delay      = 0.03;
-	my $lowercase  = 0;
-	my $normalcase = 0;
-	my $smartcase  = 0;
-	my $revcase    = 0;
+	my $delay = 0.03;
+	my $case  = 'upper';
 	my $demo;
 	GetOptions(
 		'delay|d=f'  => \$delay,
 		'demo'       => \$demo,
 		'case=s'     => \$case,
-		'lowercase'  => \$lowercase,
-		'normalcase' => \$normalcase,
-		'smartcase'  => \$smartcase,
-		'revcase'    => \$revcase,
 	) or usage("Error in command line arguments\n");
-	if ($lowercase + $normalcase + $smartcase + $revcase > 1) {
-		usage("Error: -l, -n, -r and -s options are mutually exclusive\n");
+	if (!$CASES{$case}) {
+		usage("Error: Unknown value for 'case': $case\n");
 	}
 	if ($delay =~ /[^\d.]/) {
 		usage("Error: -d requires a real number\n");
 	}
-	my $case = $lowercase
-		? 'lower'
-		: $normalcase
-		? 'normal'
-		: $smartcase
-		? 'smart'
-		: $revcase
-		? 'reverse'
-		: 'upper';
 	return {
 		delay => $delay,
 		demo => $demo,
-		case => $case,
+		case => $CASES{$case},
 	};
 }
 
@@ -107,7 +126,7 @@ sub resizer {
 	$SIG{WINCH} = *resizer;
 }
 
-sub uluc {
+sub underscorecase {
 	my ($text) = @_;
 	$text =~ s/(.)/
 		$1 eq lc($1) ? uc($1) : "$SMUL$1$RMUL"
@@ -115,7 +134,7 @@ sub uluc {
 	return $text;
 }
 
-sub revuc {
+sub reversecase {
 	my ($text) = @_;
 	$text =~ s/(.)/
 		$1 eq lc($1) ? uc($1) : "$BLACK$ON_GREEN$1$GREEN$ON_BLACK"
@@ -129,10 +148,10 @@ sub cased {
 		? uc($text)
 		: $type eq 'lower'
 		? lc($text)
-		: $type eq 'smart'
-		? uluc($text)
+		: $type eq 'underscore'
+		? underscorecase($text)
 		: $type eq 'reverse'
-		? revuc($text)
+		? reversecase($text)
 		: $text;
 }
 
@@ -195,6 +214,115 @@ sub main {
 # main
 
 main();
+
+################################################################################
+# manual
+
+=pod
+
+=for section 1
+
+=for roff
+.de us \" underscore string
+\\$1\l'|0\(ul'
+..
+.hy 0 \" hyphenation off
+
+
+=head1 NAME
+
+B<phosphor> - display text like on a phosphorescent CRT terminal
+
+=head1 SYNOPSIS
+
+=for roff
+.ad l \" align left
+
+C<phosphor [ { -c | --case } >I<style>C< ] [ -d | --delay>I< delay>C< ]>
+S<< C<[ --demo ] [ >I<filename>C< [ >I<filename ...>C< ] ]> >>
+
+=for roff
+.ad n \" align normal
+
+=head1 DESCRIPTION
+
+B<phosphor> displays text in a word-by-word animation as on a slow CRT terminal.
+By default, the text is converted to uppercase.
+
+Text can be read from files or from standard input.
+
+=head1 OPTIONS
+
+=over 4
+
+=item B<-c> I<style>, B<--case> I<style>
+
+Case mapping of letters. I<style> can be one of:
+
+=over 4
+
+=item l | lower
+
+All characters are mapped to lowercase.
+
+=item u | upper
+
+All characters are mapped to uppercase.
+
+=item n | normal
+
+No case conversion is done.
+
+=item r | reverse
+
+Uppercase characters are displayed in inverse; lowercase characters are mapped to uppercase.
+
+=item u | underscore
+
+Uppercase characters are underscored; lowercase characters are mapped to uppercase.
+This is the default.
+
+=back
+
+=item B<-d> I<delay>, B<--delay> I<delay>
+
+The delay in (fractional) seconds between words (default: 0.03)
+
+=item B<--demo>
+
+Use a fixed demo text. No other input will be read.
+
+=item I<filename> [ I<filename ...> ]
+
+Files whose content should be displayed. If none are specified, read from standard input.
+
+=back
+
+=head1 SEE ALSO
+
+tput(1), infocmp(1)
+
+=head1 VERSION
+
+=for roff
+.PP \" display the 'pertains to'-macro
+.Vp \*(Vw
+
+=head1 AUTHOR and COPYRIGHT
+
+=for roff
+.\" the \(co macro only exists in groff
+.ie \n(.g Copyright \(co \*(Yr, Ren\('e
+.el       Copyright (c) \*(Yr, Rene\*'
+Uittenbogaard (ruittenb@users.sourceforge.net)
+
+This program is free software; you can redistribute it and/or modify it
+under the terms described by the GNU General Public License version 3.
+
+B<phosphor> is distributed without any warranty, even without the
+implied warranties of merchantability or fitness for a particular purpose.
+
+=cut
 
 ################################################################################
 # demo text
