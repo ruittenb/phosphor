@@ -139,7 +139,7 @@
 .if n .ad l
 .nh
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.92
+.ds Vw @(#) phosphor 0.93
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -152,9 +152,11 @@ phosphor \- display text like on a phosphorescent CRT terminal
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .ad l \" align left
-\&\fBphosphor\fR [ \fB\-\-blink\-rate\fR \fIdelay\fR ] [ \fB\-\-blink\-times\fR \fInum\fR ]
-[\ {\ \fB\-c\ |\ \-\-case\fR\ }\ \fIstyle\fR\ ]
-[\ \fB\-d\ |\ \-\-delay\fR\ \fIdelay\fR\ ]
+\&\fBphosphor\fR
+[\ {\ \fB\-br\fR\ |\ \fB\-\-blink\-rate\fR\ }\ \fIdelay\fR\ ]
+[\ {\ \fB\-bt\fR\ |\ \fB\-\-blink\-times\fR\ }\ \fInum\fR\ ]
+[\ {\ \fB\-c\fR|\ \fB\-\-case\fR\ }\ \fIstyle\fR\ ]
+[\ \fB\-d\fR\ |\ \fB\-\-delay\fR\ \fIdelay\fR\ ]
 [\ \fB\-\-demo\fR\ ]\ [\ \fIfilename\fR\ [\ \fIfilename\fR\ ...\ ]\ ]
 .ad n \" align normal
 .SH "DESCRIPTION"
@@ -166,11 +168,11 @@ By default, the text is converted to uppercase.
 Text can be read from files or from standard input.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
-.IP "\fB\-\-blink\-rate\fR \fIdelay\fR" 4
-.IX Item "--blink-rate delay"
+.IP "\fB\-br\fR \fIdelay\fR, \fB\-\-blink\-rate\fR \fIdelay\fR" 4
+.IX Item "-br delay, --blink-rate delay"
 The delay in (fractional) seconds between cursor blinks after interpunction (default: 0.1).
-.IP "\fB\-\-blink\-times\fR \fInum\fR" 4
-.IX Item "--blink-times num"
+.IP "\fB\-bt\fR \fInum\fR, \fB\-\-blink\-times\fR \fInum\fR" 4
+.IX Item "-bt num, --blink-times num"
 The number of times the cursor will blink after a full stop, question mark, or exclamation mark.
 After a comma, the cursor will blink only once, or not at all if this parameter is zero.
 .IP "\fB\-c\fR \fIstyle\fR, \fB\-\-case\fR \fIstyle\fR" 4
@@ -209,12 +211,12 @@ Files whose content should be displayed. If none are specified, read from standa
 .IP "phosphor \-d 0.1 \-\-demo" 4
 .IX Item "phosphor -d 0.1 --demo"
 .PD 0
-.IP "phosphor \-c s \-blink\-rate 0.2 \-\-demo" 4
-.IX Item "phosphor -c s -blink-rate 0.2 --demo"
+.IP "phosphor \-c s \-br 0.2 \-\-demo" 4
+.IX Item "phosphor -c s -br 0.2 --demo"
 .PD
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
-\&\fBtput\fR\|(1), \fBinfocmp\fR\|(1)
+For developers: \fBinfocmp\fR\|(1), \fBtput\fR\|(1), \fBTerm::Terminfo\fR\|(3pm).
 .SH "VERSION"
 .IX Header "VERSION"
 .PP \" display the 'pertains to'-macro
