@@ -139,7 +139,7 @@
 .if n .ad l
 .nh
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.91
+.ds Vw @(#) phosphor 0.92
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -152,22 +152,27 @@ phosphor \- display text like on a phosphorescent CRT terminal
 .SH "SYNOPSIS"
 .IX Header "SYNOPSIS"
 .ad l \" align left
-\&\f(CW\*(C`phosphor [ \-b | \-\-blink \*(C'\fR\fIdelay\fR\f(CW\*(C` ] [ { \-c | \-\-case } \*(C'\fR\fIstyle\fR\f(CW\*(C` ]\*(C'\fR
-\&\f(CW\*(C`[\ \-d\ |\ \-\-delay\ \*(C'\fR\fIdelay\fR\f(CW\*(C`\ ]\*(C'\fR
-\&\f(CW\*(C`[\ \-\-demo\ ]\ [\ \*(C'\fR\fIfilename\fR\f(CW\*(C`\ [\ \*(C'\fR\fIfilename\ ...\fR\f(CW\*(C`\ ]\ ]\*(C'\fR
+\&\fBphosphor\fR [ \fB\-\-blink\-rate\fR \fIdelay\fR ] [ \fB\-\-blink\-times\fR \fInum\fR ]
+[\ {\ \fB\-c\ |\ \-\-case\fR\ }\ \fIstyle\fR\ ]
+[\ \fB\-d\ |\ \-\-delay\fR\ \fIdelay\fR\ ]
+[\ \fB\-\-demo\fR\ ]\ [\ \fIfilename\fR\ [\ \fIfilename\fR\ ...\ ]\ ]
 .ad n \" align normal
 .SH "DESCRIPTION"
 .IX Header "DESCRIPTION"
 \&\fBphosphor\fR displays text in a word-by-word animation as on a slow \s-1CRT\s0 terminal.
+Words are flashed extra bright/bold when first displayed.
 By default, the text is converted to uppercase.
 .PP
 Text can be read from files or from standard input.
 .SH "OPTIONS"
 .IX Header "OPTIONS"
-.IP "\fB\-b\fR \fIdelay\fR, \fB\-\-blink\fR \fIdelay\fR" 4
-.IX Item "-b delay, --blink delay"
-The delay in (fractional) seconds between cursor blinks after a comma (default: 0.1).
-The blink delay is doubled for a full stop, question mark and exclamation mark.
+.IP "\fB\-\-blink\-rate\fR \fIdelay\fR" 4
+.IX Item "--blink-rate delay"
+The delay in (fractional) seconds between cursor blinks after interpunction (default: 0.1).
+.IP "\fB\-\-blink\-times\fR \fInum\fR" 4
+.IX Item "--blink-times num"
+The number of times the cursor will blink after a full stop, question mark, or exclamation mark.
+After a comma, the cursor will blink only once, or not at all if this parameter is zero.
 .IP "\fB\-c\fR \fIstyle\fR, \fB\-\-case\fR \fIstyle\fR" 4
 .IX Item "-c style, --case style"
 Case mapping of letters. \fIstyle\fR can be one of:
@@ -199,6 +204,14 @@ Use a fixed demo text. No other input will be read.
 .IP "\fIfilename\fR [ \fIfilename ...\fR ]" 4
 .IX Item "filename [ filename ... ]"
 Files whose content should be displayed. If none are specified, read from standard input.
+.SH "EXAMPLES"
+.IX Header "EXAMPLES"
+.IP "phosphor \-d 0.1 \-\-demo" 4
+.IX Item "phosphor -d 0.1 --demo"
+.PD 0
+.IP "phosphor \-c s \-blink\-rate 0.2 \-\-demo" 4
+.IX Item "phosphor -c s -blink-rate 0.2 --demo"
+.PD
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
 \&\fBtput\fR\|(1), \fBinfocmp\fR\|(1)

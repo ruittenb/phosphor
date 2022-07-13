@@ -2,7 +2,7 @@
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
-# Version    : 0.91
+# Version    : 0.92
 # Description: display text like on a phosphorescent CRT terminal
 #              By default, the text is converted to uppercase.
 #
@@ -16,7 +16,7 @@
 
 =for roff
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.91
+.ds Vw @(#) phosphor 0.92
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -30,6 +30,7 @@ use strict;
 use warnings;
 #use diagnostics;
 #use utf8;
+use POSIX qw(fmin);
 use IO::Handle;
 use Getopt::Long;
 use Time::HiRes qw(sleep);
@@ -68,19 +69,20 @@ sub usage {
 	my $error = shift;
 	my @usage = <<"	_endUsage_";
 Usage:
-	phosphor [ -b | --blink <delay> ] [ -d | --delay <delay> ]
-		 [ { -c | --case } { lower | upper | normal | underscore | reverse } ]
+	phosphor [ --blink-rate <delay> ] [ --blink-times <num> ] [ -d | --delay <delay> ]
+		 [ { -c | --case } { lower | upper | normal | reverse | underscore } ]
 		 [ --demo ] [ <filename> ]
 	
-	-b|--blink : cursor blink delay after full stop etc., in seconds (default: 0.1s)
-	-d|--delay : print delay between words, in seconds (default: 0.05s)
-	-c|--case  : specify case conversion:
-	            l | lower      : to lowercase
-	            u | upper      : to uppercase (default)
-	            n | normal     : no case conversion
-	            s | underscore : upper -> underscored; lower -> upper
-	            r | reverse    : upper -> reverse; lower -> upper
-	--demo     : use demo text (default: read text from stdin or <filename>)
+	--blink-rate  : cursor blink delay after interpunction, in seconds (default: 0.1s)
+	--blink-times : number of times to blink the cursor after interpunction (default: 2)
+	-d|--delay    : print delay between words, in seconds (default: 0.05s)
+	-c|--case     : specify case conversion:
+	               l | lower      : to lowercase
+	               u | upper      : to uppercase (default)
+	               n | normal     : no case conversion
+	               r | reverse    : upper -> reverse; lower -> upper
+	               s | underscore : upper -> underscored; lower -> upper
+	--demo        : use demo text (default: read text from stdin or <filename>)
 	
 	_endUsage_
 	if ($error) {
@@ -93,14 +95,16 @@ Usage:
 
 sub getopts {
 	my $delay = 0.05;
-    my $blink = 0.1;
+    my $blink_rate = 0.1;
+    my $blink_times = 2;
 	my $case  = 'upper';
 	my $demo;
 	GetOptions(
-		'blink|b=f'  => \$blink,
-		'delay|d=f'  => \$delay,
-		'demo'       => \$demo,
-		'case=s'     => \$case,
+		'blink-rate=f'  => \$blink_rate,
+		'blink-times=f' => \$blink_times,
+		'delay|d=f'     => \$delay,
+		'demo'          => \$demo,
+		'case|c=s'      => \$case,
 	) or usage("Error in command line arguments\n");
 	if (!$CASES{$case}) {
 		usage("Error: Unknown value for 'case': $case\n");
@@ -109,7 +113,8 @@ sub getopts {
 		usage("Error: -d requires a real number\n");
 	}
 	return {
-		blink => $blink,
+		blink_rate => $blink_rate,
+		blink_times => $blink_times,
 		delay => $delay,
 		demo => $demo,
 		case => $CASES{$case},
@@ -160,41 +165,38 @@ sub flash {
 	my $leader = cased $case, shift;
 	my $text = cased $case, shift;
 	my $delay = shift;
-	my $blink = shift;
+    my $blink_rate = shift;
+    my $blink_times = shift;
+
 	print "\r$NORMAL$GREEN$ON_BLACK$leader$BOLD$text";
 	sleep $delay;
 	print "\r$NORMAL$GREEN$ON_BLACK$leader$text";
     my ($punct) = ($text =~ /([.,!?])\s+$/);
     if ($punct) {
-        sleep $blink; print $CIVIS;
-        sleep $blink; print $CNORM;
-        if ($punct ne ',') {
-            sleep $blink; print $CIVIS;
-            sleep $blink; print $CNORM;
+        my $blinks = $punct ne ',' ? $blink_times : fmin($blink_times, 1);
+        while ($blinks--) {
+            sleep $blink_rate; print $CIVIS;
+            sleep $blink_rate; print $CNORM;
         }
     }
 }
 
 sub flashtext {
     my ($leader, $text, $opts) = @_;
-    flash $opts->{case}, $leader, $text, $opts->{delay}, $opts->{blink};
+    flash $opts->{case}, $leader, $text, $opts->@{qw(delay blink_rate blink_times)};
 }
 
 sub phosphorize {
 	my ($opts) = @_;
-	if ($opts->{demo}) {
-		*SOURCE = *DATA;
-	} else {
-		*SOURCE = *ARGV;
-	}
+	*SOURCE = $opts->{demo} ? *DATA : *ARGV;
 	while (<SOURCE>) {
 		s/\e\[([0-9]{1,2}(;[0-9]{1,2})*)?[m|K]//g; # remove color escapes
 		s/[\r\n]//g; # remove CR and LF
 		# print word by word
 		my $line = '';
 		while (/((.+?)(\s+|$))/g) {
-			my ($match, $text, $space) = ($1, $2, $3);
-			# if the matched text does not fit on the current line, advance to the next line
+			my ($match, $_text, $_space) = ($1, $2, $3);
+			# if the matched text does not fit on the current screen line, advance to the next screen line
 			if (length($line) + length($match) > $COLUMNS) {
 				$line = '';
 				print "\n";
@@ -254,9 +256,10 @@ B<phosphor> - display text like on a phosphorescent CRT terminal
 =for roff
 .ad l \" align left
 
-C<phosphor [ -b | --blink >I<delay>C< ] [ { -c | --case } >I<style>C< ]>
-S<< C<[ -d | --delay >I<delay>C< ]> >>
-S<< C<[ --demo ] [ >I<filename>C< [ >I<filename ...>C< ] ]> >>
+B<phosphor> [ B<--blink-rate> I<delay> ] [ B<--blink-times> I<num> ]
+S<< [ { B<-c | --case> } I<style> ] >>
+S<< [ B<-d | --delay> I<delay> ] >>
+S<< [ B<--demo> ] [ I<filename> [ I<filename> ... ] ] >>
 
 =for roff
 .ad n \" align normal
@@ -264,6 +267,7 @@ S<< C<[ --demo ] [ >I<filename>C< [ >I<filename ...>C< ] ]> >>
 =head1 DESCRIPTION
 
 B<phosphor> displays text in a word-by-word animation as on a slow CRT terminal.
+Words are flashed extra bright/bold when first displayed.
 By default, the text is converted to uppercase.
 
 Text can be read from files or from standard input.
@@ -272,10 +276,14 @@ Text can be read from files or from standard input.
 
 =over 4
 
-=item B<-b> I<delay>, B<--blink> I<delay>
+=item B<--blink-rate> I<delay>
 
-The delay in (fractional) seconds between cursor blinks after a comma (default: 0.1).
-The blink delay is doubled for a full stop, question mark and exclamation mark.
+The delay in (fractional) seconds between cursor blinks after interpunction (default: 0.1).
+
+=item B<--blink-times> I<num>
+
+The number of times the cursor will blink after a full stop, question mark, or exclamation mark.
+After a comma, the cursor will blink only once, or not at all if this parameter is zero.
 
 =item B<-c> I<style>, B<--case> I<style>
 
@@ -316,6 +324,16 @@ Use a fixed demo text. No other input will be read.
 =item I<filename> [ I<filename ...> ]
 
 Files whose content should be displayed. If none are specified, read from standard input.
+
+=back
+
+=head1 EXAMPLES
+
+=over 4
+
+=item phosphor -d 0.1 --demo
+
+=item phosphor -c s -blink-rate 0.2 --demo
 
 =back
 
