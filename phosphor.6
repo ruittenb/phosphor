@@ -133,13 +133,13 @@
 .\" ========================================================================
 .\"
 .IX Title "phosphor 6"
-.TH phosphor 6 "2022-07-13" " " " "
+.TH phosphor 6 "2022-07-14" " " " "
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.93
+.ds Vw @(#) phosphor 0.94
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -156,6 +156,7 @@ phosphor \- display text like on a phosphorescent CRT terminal
 [\ {\ \fB\-br\fR\ |\ \fB\-\-blink\-rate\fR\ }\ \fIdelay\fR\ ]
 [\ {\ \fB\-bt\fR\ |\ \fB\-\-blink\-times\fR\ }\ \fInum\fR\ ]
 [\ {\ \fB\-c\fR|\ \fB\-\-case\fR\ }\ \fIstyle\fR\ ]
+[\ {\ \fB\-co\fR|\ \fB\-\-color\fR\ }\ \fIcolorname\fR\ ]
 [\ \fB\-d\fR\ |\ \fB\-\-delay\fR\ \fIdelay\fR\ ]
 [\ \fB\-\-demo\fR\ ]\ [\ \fIfilename\fR\ [\ \fIfilename\fR\ ...\ ]\ ]
 .ad n \" align normal
@@ -197,6 +198,17 @@ Uppercase characters are underscored; lowercase characters are mapped to upperca
 .RE
 .RS 4
 .RE
+.IP "\fB\-co\fR \fIcolorname\fR, \fB\-\-color\fR \fIcolorname\fR" 4
+.IX Item "-co colorname, --color colorname"
+Select a color for the text and/or background.
+.Sp
+For setting a text color, valid names are those listed in \fBTerm::ANSIColor\fR\|(3pm): black, blue,
+red, magenta, green, cyan, yellow, white. In addition, the color 'amber' is recognized,
+but it may not be supported by your terminal.
+.Sp
+For setting a background color, the names listed above can be combined with the prefix \fBon_\fR.
+.Sp
+For setting both foreground and background color, use \fIe.g.\fR \fB\-\-color 'green on_black'\fR.
 .IP "\fB\-d\fR \fIdelay\fR, \fB\-\-delay\fR \fIdelay\fR" 4
 .IX Item "-d delay, --delay delay"
 The delay in (fractional) seconds between printing words (default: 0.05)
@@ -211,11 +223,15 @@ Files whose content should be displayed. If none are specified, read from standa
 .IP "phosphor \-d 0.1 \-\-demo" 4
 .IX Item "phosphor -d 0.1 --demo"
 .PD 0
-.IP "phosphor \-c s \-br 0.2 \-\-demo" 4
-.IX Item "phosphor -c s -br 0.2 --demo"
+.IP "phosphor \-c s \-br 0.2 \-\-color 'green on_black' \-\-demo" 4
+.IX Item "phosphor -c s -br 0.2 --color 'green on_black' --demo"
+.IP "phosphor \-c s \-br 0.2 \-\-color 'amber on_black' demo/Adamas\-Journal\-19\-Experiment\-in\-Terra.txt" 4
+.IX Item "phosphor -c s -br 0.2 --color 'amber on_black' demo/Adamas-Journal-19-Experiment-in-Terra.txt"
 .PD
 .SH "SEE ALSO"
 .IX Header "SEE ALSO"
+\&\fBTerm::ANSIColor\fR\|(3pm).
+.PP
 For developers: \fBinfocmp\fR\|(1), \fBtput\fR\|(1), \fBTerm::Terminfo\fR\|(3pm).
 .SH "VERSION"
 .IX Header "VERSION"

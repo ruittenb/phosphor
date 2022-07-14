@@ -2,7 +2,7 @@
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
-# Version    : 0.93
+# Version    : 0.94
 # Description: animate text like on a slow phosphorescent CRT terminal
 # Usage      : see manual
 #
@@ -14,7 +14,7 @@
 
 =for roff
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.93
+.ds Vw @(#) phosphor 0.94
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -33,13 +33,12 @@ use IO::Handle;
 use Getopt::Long;
 use Time::HiRes qw(sleep);
 use Term::Terminfo;
-use Term::ANSIColor;
+use Term::ANSIColor qw(coloralias colorvalid colorstrip color);
 
 ################################################################################
 # declarations
 
 my ($NORMAL, $SMUL, $RMUL, $BOLD, $REVERSE, $CNORM, $CIVIS);
-my ($BLACK, $GREEN, $ON_BLACK, $ON_GREEN);
 my $COLUMNS;
 
 my %CASES = qw(
@@ -61,7 +60,7 @@ sub usage {
 Usage:
 	phosphor [ -br | --blink-rate <delay> ] [ -bt | --blink-times <num> ]
 		 [ { -c | --case } { lower | upper | normal | reverse | underscore } ]
-		 [ -d | --delay <delay> ] [ --demo ] [ <filename> ]
+         [ { -co | --color } <color> ] [ -d | --delay <delay> ] [ --demo ] [ <filename> ]
 	
 	-br|--blink-rate  : cursor blink delay after interpunction, in seconds (default: 0.1s)
 	-bt|--blink-times : number of times to blink the cursor after interpunction (default: 2)
@@ -72,6 +71,11 @@ Usage:
 	                    n | normal     : no case conversion
 	                    r | reverse    : upper -> reverse; lower -> upper
 	                    s | underscore : upper -> underscored; lower -> upper
+	-co|--color       : specify text color: any combination of:
+                        black    on_black    green   on_green   bold
+                        blue     on_blue     cyan    on_cyan    reverse
+                        red      on_red      yellow  on_yellow  amber    
+                        magenta  on_magenta  white   on_white   on_amber
 	--demo            : use demo text (default: read text from stdin or <filename>)
 	
 	_endUsage_
@@ -88,6 +92,7 @@ sub getopts {
     my $blink_rate = 0.1;
     my $blink_times = 2;
 	my $case  = 'upper';
+    my $color = 'green on_black';
 	my $demo;
 	GetOptions(
 		'blink-rate|br=f'  => \$blink_rate,
@@ -95,10 +100,16 @@ sub getopts {
 		'delay|d=f'        => \$delay,
 		'demo'             => \$demo,
 		'case|c=s'         => \$case,
+        'color|co=s'       => \$color,
 	) or usage("Error in command line arguments\n");
 	if (!$CASES{$case}) {
-		usage("Error: Unknown value for 'case': $case\n");
+		usage("Error: Unknown value for case: '$case'\n");
 	}
+    coloralias('amber', 'rgb431');
+    coloralias('on_amber', 'on_rgb431');
+    if (!colorvalid($color)) {
+		usage("Error: Unknown value for color: '$color'\n");
+    }
 	if ($delay =~ /[^\d.]/) {
 		usage("Error: -d requires a real number\n");
 	}
@@ -108,6 +119,7 @@ sub getopts {
 		delay => $delay,
 		demo => $demo,
 		case => $CASES{$case},
+        color => color($color),
 	};
 }
 
@@ -129,13 +141,9 @@ sub init {
     $RMUL     = $ti->getstr('rmul' ); # || "\e[24m";
     $BOLD     = $ti->getstr('bold' ); # || "\e[1m";
     $REVERSE  = $ti->getstr('rev'  ); # || "\e[7m";
-    $CNORM    = $ti->getstr('cnorm'); # || "\e[?12l\e[?25h";
-    $CIVIS    = $ti->getstr('civis'); # || "\e[?25l";
-
-    $BLACK    = color('black')      ; # || "\e[30m";
-    $GREEN    = color('green')      ; # || "\e[32m";
-    $ON_BLACK = color('on_black')   ; # || "\e[40m";
-    $ON_GREEN = color('on_green')   ; # || "\e[42m";
+    $REVERSE  = color('reverse');     # || "\e[7m";
+    $CNORM    = $ti->getstr('cnorm') || "\e[?12l\e[?25h";
+    $CIVIS    = $ti->getstr('civis') || "\e[?25l";
 
     interrupt_handler();
 	resizer();
@@ -152,7 +160,7 @@ sub underscorecase {
 sub reversecase {
 	my ($text) = @_;
 	$text =~ s/(.)/
-		$1 eq lc($1) ? uc($1) : "$BLACK$ON_GREEN$1$GREEN$ON_BLACK"
+		$1 eq lc($1) ? uc($1) : "$REVERSE$1$NORMAL"
 	/eg;
 	return $text;
 }
@@ -171,16 +179,17 @@ sub cased {
 }
 
 sub flash {
-	my $case = shift;
-	my $leader = cased $case, shift;
-	my $text = cased $case, shift;
-	my $delay = shift;
-    my $blink_rate = shift;
+	my $case        = shift;
+	my $leader      = cased $case, shift;
+	my $text        = cased $case, shift;
+    my $color       = shift;
+	my $delay       = shift;
+    my $blink_rate  = shift;
     my $blink_times = shift;
 
-	print "\r$NORMAL$GREEN$ON_BLACK$leader$BOLD$text";
+	print "\r$NORMAL$color$leader$BOLD$text";
 	sleep $delay;
-	print "\r$NORMAL$GREEN$ON_BLACK$leader$text";
+	print "\r$NORMAL$color$leader$text";
     my ($punct) = ($text =~ /([.,!?])\s+$/);
     if ($punct) {
         my $blinks = $punct ne ',' ? $blink_times : fmin($blink_times, 1);
@@ -193,7 +202,7 @@ sub flash {
 
 sub flashtext {
     my ($leader, $text, $opts) = @_;
-    flash $opts->{case}, $leader, $text, $opts->@{qw(delay blink_rate blink_times)};
+    flash $opts->{case}, $leader, $text, $opts->@{qw(color delay blink_rate blink_times)};
 }
 
 sub munch {
@@ -203,7 +212,8 @@ sub phosphorize {
 	my ($opts) = @_;
 	local *SOURCE = $opts->{demo} ? *DATA : *ARGV;
 	while (<SOURCE>) {
-		s/\e\[([0-9]{1,2}(;[0-9]{1,2})*)?[m|K]//g; # remove color escapes
+        # s/\e\[([0-9]{1,2}(;[0-9]{1,2})*)?[m|K]//g; # remove color escapes
+        $_ = colorstrip($_);
 		s/[\r\n]//g; # remove CR and LF
 		# print word by word
 		my $line = '';
@@ -279,6 +289,7 @@ B<phosphor>
 S<< [ { B<-br> | B<--blink-rate> } I<delay> ] >>
 S<< [ { B<-bt> | B<--blink-times> } I<num> ] >>
 S<< [ { B<-c>| B<--case> } I<style> ] >>
+S<< [ { B<-co>| B<--color> } I<colorname> ] >>
 S<< [ B<-d> | B<--delay> I<delay> ] >>
 S<< [ B<--demo> ] [ I<filename> [ I<filename> ... ] ] >>
 
@@ -334,6 +345,18 @@ Uppercase characters are underscored; lowercase characters are mapped to upperca
 
 =back
 
+=item B<-co> I<colorname>, B<--color> I<colorname>
+
+Select a color for the text and/or background.
+
+For setting a text color, valid names are those listed in Term::ANSIColor(3pm): black, blue,
+red, magenta, green, cyan, yellow, white. In addition, the color 'amber' is recognized,
+but it may not be supported by your terminal.
+
+For setting a background color, the names listed above can be combined with the prefix B<on_>.
+
+For setting both foreground and background color, use I<e.g.> B<--color 'green on_black'>.
+
 =item B<-d> I<delay>, B<--delay> I<delay>
 
 The delay in (fractional) seconds between printing words (default: 0.05)
@@ -354,11 +377,15 @@ Files whose content should be displayed. If none are specified, read from standa
 
 =item phosphor -d 0.1 --demo
 
-=item phosphor -c s -br 0.2 --demo
+=item phosphor -c s -br 0.2 --color 'green on_black' --demo
+
+=item phosphor -c s -br 0.2 --color 'amber on_black' demo/Adamas-Journal-19-Experiment-in-Terra.txt
 
 =back
 
 =head1 SEE ALSO
+
+Term::ANSIColor(3pm).
 
 For developers: infocmp(1), tput(1), Term::Terminfo(3pm).
 
