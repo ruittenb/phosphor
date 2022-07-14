@@ -2,7 +2,7 @@
 
 ## Configuration
 
- * Install the [Fixed font](Fixed.ttf) on the system.
+ * Install a font such as [Fixed](fixed.ttf) or [Glass TTY](glass-tty-vt220.ttf) on the system.
  * Move the [green](lines-on-green.png) and [amber](lines-on-amber.png) background image files to some directory.
  * Edit the JSON file for [green](Green-CRT.json) or [amber](Amber-CRT.json) terminal.
    * Change the path on [line 8](Green-CRT.json#L8) to the path of your home directory.
