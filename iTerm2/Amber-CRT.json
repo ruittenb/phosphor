@@ -21,11 +21,11 @@
   "Use Italic Font" : true,
   "HotKey Characters" : "\u0018",
   "Foreground Color" : {
-    "Red Component" : 0.18783176914540095,
+    "Red Component" : 0.81568627450980391,
     "Color Space" : "sRGB",
-    "Blue Component" : 0.26124693836754498,
+    "Blue Component" : 0.15686274509803921,
     "Alpha Component" : 1,
-    "Green Component" : 0.61013698577880859
+    "Green Component" : 0.62745098039215685
   },
   "HotKey Window Floats" : false,
   "Use Custom Window Title" : false,
@@ -71,22 +71,22 @@
   },
   "Use Non-ASCII Font" : false,
   "Link Color" : {
-    "Red Component" : 0.10196078431372549,
+    "Red Component" : 0.81568627450980391,
     "Color Space" : "sRGB",
-    "Blue Component" : 0.18431372549019609,
+    "Blue Component" : 0.15686274509803921,
     "Alpha Component" : 1,
-    "Green Component" : 0.77647058823529413
+    "Green Component" : 0.62745098039215685
   },
   "Use Custom Tab Title" : true,
   "Shortcut" : "",
   "Answerback String" : "DEC Terminal",
-  "Background Image Location" : "\/Users\/smurf\/Pictures\/lines-on-green.png",
+  "Background Image Location" : "\/Users\/smurf\/Pictures\/lines-on-amber.png",
   "Bold Color" : {
-    "Red Component" : 0.10452676427951246,
+    "Red Component" : 0.87163209915161133,
     "Color Space" : "sRGB",
-    "Blue Component" : 0.18811844808870842,
+    "Blue Component" : 0.16762156120373911,
     "Alpha Component" : 1,
-    "Green Component" : 0.77685856819152832
+    "Green Component" : 0.67048624481495633
   },
   "Use Cursor Guide" : false,
   "Custom Window Title" : "",
@@ -302,18 +302,20 @@
   "Use Bright Bold" : true,
   "HotKey Modifier Activation" : 0,
   "Cursor Text Color" : {
-    "Green Component" : 1,
-    "Blue Component" : 1,
-    "Red Component" : 1
+    "Red Component" : 0,
+    "Color Space" : "sRGB",
+    "Blue Component" : 0,
+    "Alpha Component" : 1,
+    "Green Component" : 0
   },
   "HotKey Window Dock Click Action" : 0,
   "Default Bookmark" : "No",
   "Cursor Color" : {
-    "Red Component" : 0.18431372549019609,
+    "Red Component" : 0.87058823529411766,
     "Color Space" : "sRGB",
-    "Blue Component" : 0.25882352941176473,
+    "Blue Component" : 0.16470588235294117,
     "Alpha Component" : 1,
-    "Green Component" : 0.60784313725490191
+    "Green Component" : 0.66666666666666663
   },
   "Ansi 1 Color" : {
     "Red Component" : 0.92222023010253906,
@@ -322,8 +324,8 @@
     "Alpha Component" : 1,
     "Green Component" : 0.12467001965204105
   },
-  "Name" : "Green CRT",
-  "Guid" : "10FE0596-FB2C-42F2-BF4E-434B1EC40E55",
+  "Name" : "Amber CRT",
+  "Guid" : "396C2D97-25FD-4928-B6B2-5E45D9EC530B",
   "Blinking Cursor" : false,
   "Ansi 8 Color" : {
     "Red Component" : 0.47491902112960815,
