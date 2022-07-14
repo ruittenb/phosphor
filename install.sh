@@ -3,10 +3,10 @@
 PREFIX=/usr/local
 
 main() {
-	local progname="$1"
-	local section="$2"
-	local bindir=$PREFIX/bin
-	local mandir=$PREFIX/share/man/man$section
+	progname="$1"
+	section="$2"
+	bindir=$PREFIX/bin
+	mandir=$PREFIX/share/man/man$section
 
 	echo "Making appropriate directories under $PREFIX ..."
 	test -d $bindir || mkdir -p -m 775 $bindir
