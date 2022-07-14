@@ -1,8 +1,9 @@
 #!/usr/bin/env perl
+# vim: set ts=4 sw=4 noet nu:
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
-# Version    : 0.94
+# Version    : 0.95
 # Description: animate text like on a slow phosphorescent CRT terminal
 # Usage      : see manual
 #
@@ -14,7 +15,7 @@
 
 =for roff
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.94
+.ds Vw @(#) phosphor 0.95
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -24,6 +25,7 @@ This manual pertains to \fBphosphor\fP version \\$3.
 ############################################################################
 # prerequisites
 
+use v5.10;
 use strict;
 use warnings;
 #use diagnostics;
@@ -38,7 +40,7 @@ use Term::ANSIColor qw(coloralias colorvalid colorstrip color);
 ################################################################################
 # declarations
 
-my ($NORMAL, $SMUL, $RMUL, $BOLD, $REVERSE, $CNORM, $CIVIS);
+my ($RESET, $SMUL, $RMUL, $BOLD, $REVERSE, $CNORM, $CIVIS);
 my $COLUMNS;
 
 my %CASES = qw(
@@ -59,24 +61,25 @@ sub usage {
 	my @usage = <<"	_endUsage_";
 Usage:
 	phosphor [ -br | --blink-rate <delay> ] [ -bt | --blink-times <num> ]
-		 [ { -c | --case } { lower | upper | normal | reverse | underscore } ]
-         [ { -co | --color } <color> ] [ -d | --delay <delay> ] [ --demo ] [ <filename> ]
+	         [ { -c | --case } { lower | upper | normal | reverse | underscore } ]
+	         [ { -co | --color } <color> ] [ -d | --delay <delay> ] [ --demo ] [ <filename> ]
 	
 	-br|--blink-rate  : cursor blink delay after interpunction, in seconds (default: 0.1s)
 	-bt|--blink-times : number of times to blink the cursor after interpunction (default: 2)
 	-d|--delay        : print delay between words, in seconds (default: 0.05s)
+	--demo            : use demo text (default: read text from stdin or <filename>)
+	
 	-c|--case         : specify case conversion:
 	                    l | lower      : to lowercase
 	                    u | upper      : to uppercase (default)
 	                    n | normal     : no case conversion
 	                    r | reverse    : upper -> reverse; lower -> upper
 	                    s | underscore : upper -> underscored; lower -> upper
+	
 	-co|--color       : specify text color: any combination of:
-                        black    on_black    green   on_green   bold
-                        blue     on_blue     cyan    on_cyan    reverse
-                        red      on_red      yellow  on_yellow  amber    
-                        magenta  on_magenta  white   on_white   on_amber
-	--demo            : use demo text (default: read text from stdin or <filename>)
+	                    black  on_black  magenta  on_magenta  yellow  on_yellow
+	                    blue   on_blue   green    on_green    white   on_white
+	                    red    on_red    cyan     on_cyan     amber   on_amber
 	
 	_endUsage_
 	if ($error) {
@@ -89,10 +92,11 @@ Usage:
 
 sub getopts {
 	my $delay = 0.05;
-    my $blink_rate = 0.1;
-    my $blink_times = 2;
+	my $blink_rate = 0.1;
+	my $blink_times = 2;
 	my $case  = 'upper';
-    my $color = 'green on_black';
+	my $color = 'green on_black';
+	my $revcolor;
 	my $demo;
 	GetOptions(
 		'blink-rate|br=f'  => \$blink_rate,
@@ -100,53 +104,62 @@ sub getopts {
 		'delay|d=f'        => \$delay,
 		'demo'             => \$demo,
 		'case|c=s'         => \$case,
-        'color|co=s'       => \$color,
+		'color|co=s'       => \$color,
 	) or usage("Error in command line arguments\n");
+
 	if (!$CASES{$case}) {
 		usage("Error: Unknown value for case: '$case'\n");
 	}
-    coloralias('amber', 'rgb431');
-    coloralias('on_amber', 'on_rgb431');
-    if (!colorvalid($color)) {
+
+	coloralias('amber', 'rgb431');
+	coloralias('on_amber', 'on_rgb431');
+	if (!colorvalid($color)) {
 		usage("Error: Unknown value for color: '$color'\n");
-    }
+	}
+	# Reverse color: turn 'black on_yellow' into 'on_black yellow' etc.
+	($revcolor = $color) =~ s{
+		\b(on_\B)?((?!bold)\w+\b)
+	}{
+		$1 // '' eq 'on_' ? $2 : "on_$2"
+	}gxie;
+
 	if ($delay =~ /[^\d.]/) {
 		usage("Error: -d requires a real number\n");
 	}
 	return {
-		blink_rate => $blink_rate,
+		blink_rate  => $blink_rate,
 		blink_times => $blink_times,
-		delay => $delay,
-		demo => $demo,
-		case => $CASES{$case},
-        color => color($color),
+		delay       => $delay,
+		demo        => $demo,
+		case        => $CASES{$case},
+		color       => color($color) // $RESET,
+		revcolor    => color($revcolor) // $REVERSE,
 	};
 }
 
 sub interrupt_handler {
-    # force the application to end through the END block when interrupted
-    $SIG{INT} = sub { exit 1; };
+	# Force the application to end through the END block when interrupted
+	$SIG{INT} = sub { exit 1; };
 }
 
-sub resizer {
+sub resize_handler {
 	$COLUMNS = `tput cols`;
-	$SIG{WINCH} = *resizer;
+	$SIG{WINCH} = *resize_handler;
 }
 
 sub init {
-    my $ti = Term::Terminfo->new();
+	my $ti = Term::Terminfo->new();
 
-    $NORMAL   = $ti->getstr('sgr0' ); # || "\e[m";
-    $SMUL     = $ti->getstr('smul' ); # || "\e[4m";
-    $RMUL     = $ti->getstr('rmul' ); # || "\e[24m";
-    $BOLD     = $ti->getstr('bold' ); # || "\e[1m";
-    $REVERSE  = $ti->getstr('rev'  ); # || "\e[7m";
-    $REVERSE  = color('reverse');     # || "\e[7m";
-    $CNORM    = $ti->getstr('cnorm') || "\e[?12l\e[?25h";
-    $CIVIS    = $ti->getstr('civis') || "\e[?25l";
+	$RESET    = $ti->getstr('sgr0' ); # || "\e[m";
+	$SMUL     = $ti->getstr('smul' ); # || "\e[4m";
+	$RMUL     = $ti->getstr('rmul' ); # || "\e[24m";
+	$BOLD     = $ti->getstr('bold' ); # || "\e[1m";
+	$REVERSE  = $ti->getstr('rev'  ); # || "\e[7m";
+	$CNORM    = $ti->getstr('cnorm') || "\e[?12l\e[?25h";
+	$CIVIS    = $ti->getstr('civis') || "\e[?25l";
 
-    interrupt_handler();
-	resizer();
+	interrupt_handler();
+	resize_handler();
 }
 
 sub underscorecase {
@@ -158,15 +171,17 @@ sub underscorecase {
 }
 
 sub reversecase {
-	my ($text) = @_;
+	my ($text, $opts) = @_;
+	my ($color, $revcolor) = $opts->@{qw(color revcolor)};
 	$text =~ s/(.)/
-		$1 eq lc($1) ? uc($1) : "$REVERSE$1$NORMAL"
+		$1 eq lc($1) ? uc($1) : "$revcolor$1$color"
 	/eg;
 	return $text;
 }
 
 sub cased {
-	my ($type, $text) = @_;
+	my ($text, $opts) = @_;
+	my $type = $opts->{case};
 	return $type eq 'upper'
 		? uc($text)
 		: $type eq 'lower'
@@ -174,35 +189,27 @@ sub cased {
 		: $type eq 'underscore'
 		? underscorecase($text)
 		: $type eq 'reverse'
-		? reversecase($text)
+		? reversecase($text, $opts)
 		: $text;
 }
 
 sub flash {
-	my $case        = shift;
-	my $leader      = cased $case, shift;
-	my $text        = cased $case, shift;
-    my $color       = shift;
-	my $delay       = shift;
-    my $blink_rate  = shift;
-    my $blink_times = shift;
+	my ($uncased_leader, $uncased_text, $opts) = @_;
+	my $leader      = cased $uncased_leader, $opts;
+	my $text        = cased $uncased_text, $opts;
+	my $blink_times = $opts->{blink_times};
 
-	print "\r$NORMAL$color$leader$BOLD$text";
-	sleep $delay;
-	print "\r$NORMAL$color$leader$text";
-    my ($punct) = ($text =~ /([.,!?])\s+$/);
-    if ($punct) {
-        my $blinks = $punct ne ',' ? $blink_times : fmin($blink_times, 1);
-        while ($blinks--) {
-            sleep $blink_rate; print $CIVIS;
-            sleep $blink_rate; print $CNORM;
-        }
-    }
-}
-
-sub flashtext {
-    my ($leader, $text, $opts) = @_;
-    flash $opts->{case}, $leader, $text, $opts->@{qw(color delay blink_rate blink_times)};
+	print "\r$RESET$opts->{color}$leader$BOLD$text";
+	sleep $opts->{delay};
+	print "\r$RESET$opts->{color}$leader$text";
+	my ($punct) = ($text =~ /([.,!?])\s+$/);
+	if ($punct) {
+		my $blinks = $punct ne ',' ? $blink_times : fmin($blink_times, 1);
+		while ($blinks--) {
+			sleep $opts->{blink_rate}; print $CIVIS;
+			sleep $opts->{blink_rate}; print $CNORM;
+		}
+	}
 }
 
 sub munch {
@@ -212,8 +219,8 @@ sub phosphorize {
 	my ($opts) = @_;
 	local *SOURCE = $opts->{demo} ? *DATA : *ARGV;
 	while (<SOURCE>) {
-        # s/\e\[([0-9]{1,2}(;[0-9]{1,2})*)?[m|K]//g; # remove color escapes
-        $_ = colorstrip($_);
+		# s/\e\[([0-9]{1,2}(;[0-9]{1,2})*)?[m|K]//g; # remove color escapes
+		$_ = colorstrip($_);
 		s/[\r\n]//g; # remove CR and LF
 		# print word by word
 		my $line = '';
@@ -226,11 +233,11 @@ sub phosphorize {
 			}
 			# if the matched text is longer than one line, just chop it up
 			while (length($match) > $COLUMNS) {
-                flashtext '', substr($match, 0, $COLUMNS), $opts;
+				flash '', substr($match, 0, $COLUMNS), $opts;
 				print "\n";
 				$match = substr($match, $COLUMNS);
 			}
-            flashtext $line, $match, $opts;
+			flash $line, $match, $opts;
 			$line .= $match;
 		}
 		print "\n";
@@ -239,18 +246,18 @@ sub phosphorize {
 }
 
 sub autoflush (&) {
-    my $sub = shift;
+	my $sub = shift;
 	STDOUT->autoflush(1);
-    $sub->();
+	$sub->();
 	STDOUT->autoflush(0);
 }
 
 sub main {
+	init();
 	my $opts = getopts();
-    init();
-    autoflush {
-        phosphorize($opts);
-    };
+	autoflush {
+		phosphorize($opts);
+	};
 }
 
 ################################################################################
@@ -259,7 +266,7 @@ sub main {
 main();
 
 END {
-	print $NORMAL, $CNORM;
+	system "tput cnorm; tput sgr0";
 }
 
 ################################################################################
@@ -351,11 +358,12 @@ Select a color for the text and/or background.
 
 For setting a text color, valid names are those listed in Term::ANSIColor(3pm): black, blue,
 red, magenta, green, cyan, yellow, white. In addition, the color 'amber' is recognized,
-but it may not be supported by your terminal.
+but your terminal needs to support at least 256 colors.
 
-For setting a background color, the names listed above can be combined with the prefix B<on_>.
+For setting a background color, the names listed above can be prefixed with B<on_>. You may
+combine a text and background color as follows: B<--color 'blue on_cyan'>.
 
-For setting both foreground and background color, use I<e.g.> B<--color 'green on_black'>.
+The default is B<green on_black>.  For not selecting any color, use B<--color ''>.
 
 =item B<-d> I<delay>, B<--delay> I<delay>
 

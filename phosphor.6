@@ -139,7 +139,7 @@
 .if n .ad l
 .nh
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.94
+.ds Vw @(#) phosphor 0.95
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -204,11 +204,12 @@ Select a color for the text and/or background.
 .Sp
 For setting a text color, valid names are those listed in \fBTerm::ANSIColor\fR\|(3pm): black, blue,
 red, magenta, green, cyan, yellow, white. In addition, the color 'amber' is recognized,
-but it may not be supported by your terminal.
+but your terminal needs to support at least 256 colors.
 .Sp
-For setting a background color, the names listed above can be combined with the prefix \fBon_\fR.
+For setting a background color, the names listed above can be prefixed with \fBon_\fR. You may
+combine a text and background color as follows: \fB\-\-color 'blue on_cyan'\fR.
 .Sp
-For setting both foreground and background color, use \fIe.g.\fR \fB\-\-color 'green on_black'\fR.
+The default is \fBgreen on_black\fR.  For not selecting any color, use \fB\-\-color ''\fR.
 .IP "\fB\-d\fR \fIdelay\fR, \fB\-\-delay\fR \fIdelay\fR" 4
 .IX Item "-d delay, --delay delay"
 The delay in (fractional) seconds between printing words (default: 0.05)
