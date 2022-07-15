@@ -26,7 +26,7 @@ readman: $(PROG).$(SECTION) ## Display the manpage
 
 .PHONY: mandemo
 mandemo: $(PROG).$(SECTION) ## Animate the manpage
-	@man ./$(PROG).$(SECTION) | ./phosphor --case r --blink-rate 0
+	@man ./$(PROG).$(SECTION) | ./phosphor --case r --blink-rate 0 --color 'green on_black'
 
 $(PROG).$(SECTION): $(PROG)
 	pod2man $(PODOPTS) $< | sed 's/@(#)ms.acc/ms.acc/' > $@
