@@ -12,7 +12,7 @@
     "Blue Component" : 0,
     "Red Component" : 0
   },
-  "Rows" : 25,
+  "Rows" : 24,
   "Ansi 11 Color" : {
     "Green Component" : 1,
     "Blue Component" : 0.3333333432674408,
@@ -279,14 +279,14 @@
   },
   "Send Code When Idle" : false,
   "ASCII Anti Aliased" : false,
-  "Tags" : [
-
-  ],
   "Ansi 9 Color" : {
     "Green Component" : 0.3333333432674408,
     "Blue Component" : 0.3333333432674408,
     "Red Component" : 1
   },
+  "Tags" : [
+
+  ],
   "Use Bold Font" : true,
   "Silence Bell" : true,
   "Ansi 12 Color" : {
@@ -322,7 +322,7 @@
     "Alpha Component" : 1,
     "Green Component" : 0.12467001965204105
   },
-  "Name" : "Green CRT",
+  "Name" : "DEC green CRT",
   "Guid" : "10FE0596-FB2C-42F2-BF4E-434B1EC40E55",
   "Blinking Cursor" : false,
   "Ansi 8 Color" : {
@@ -349,7 +349,7 @@
   },
   "AWDS Pane Directory" : "",
   "Blur" : true,
-  "Normal Font" : "Fixed-Medium 24",
+  "Normal Font" : "Glass_TTY_VT220 24",
   "Vertical Spacing" : 1,
   "Use Underline Color" : false,
   "Ansi 7 Color" : {
@@ -412,7 +412,7 @@
     "Blue Component" : 1,
     "Red Component" : 1
   },
-  "Columns" : 100,
+  "Columns" : 80,
   "HotKey Alternate Shortcuts" : [
 
   ],

@@ -12,7 +12,7 @@
     "Blue Component" : 0,
     "Red Component" : 0
   },
-  "Rows" : 25,
+  "Rows" : 24,
   "Ansi 11 Color" : {
     "Green Component" : 1,
     "Blue Component" : 0.3333333432674408,
@@ -279,14 +279,14 @@
   },
   "Send Code When Idle" : false,
   "ASCII Anti Aliased" : false,
-  "Tags" : [
-
-  ],
   "Ansi 9 Color" : {
     "Green Component" : 0.3333333432674408,
     "Blue Component" : 0.3333333432674408,
     "Red Component" : 1
   },
+  "Tags" : [
+
+  ],
   "Use Bold Font" : true,
   "Silence Bell" : true,
   "Ansi 12 Color" : {
@@ -324,8 +324,8 @@
     "Alpha Component" : 1,
     "Green Component" : 0.12467001965204105
   },
-  "Name" : "Amber CRT",
-  "Guid" : "396C2D97-25FD-4928-B6B2-5E45D9EC530B",
+  "Name" : "DEC amber CRT",
+  "Guid" : "63C3DF45-0DE7-420F-A7FD-99E038EE2EA3",
   "Blinking Cursor" : false,
   "Ansi 8 Color" : {
     "Red Component" : 0.47491902112960815,
@@ -351,7 +351,7 @@
   },
   "AWDS Pane Directory" : "",
   "Blur" : true,
-  "Normal Font" : "Fixed-Medium 24",
+  "Normal Font" : "Glass_TTY_VT220 24",
   "Vertical Spacing" : 1,
   "Use Underline Color" : false,
   "Ansi 7 Color" : {
@@ -414,7 +414,7 @@
     "Blue Component" : 1,
     "Red Component" : 1
   },
-  "Columns" : 100,
+  "Columns" : 80,
   "HotKey Alternate Shortcuts" : [
 
   ],
