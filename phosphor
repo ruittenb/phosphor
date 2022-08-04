@@ -3,7 +3,7 @@
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
-# Version    : 0.96
+# Version    : 0.97
 # Description: animate text like on a slow phosphorescent CRT terminal
 # Usage      : see manual
 #
@@ -15,7 +15,7 @@
 
 =for roff
 .ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.96
+.ds Vw @(#) phosphor 0.97
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -58,17 +58,20 @@ my %CASES = qw(
 
 sub usage {
 	my $error = shift;
-	my @usage = <<"	_endUsage_";
+	my @usage = map { s/^\t/  /g; "$_\n" } split /\n/, <<"	_endUsage_";
 Usage:
 	phosphor [ -br | --blink-rate <delay> ] [ -bt | --blink-times <num> ]
 	         [ { -c | --case } { lower | upper | normal | reverse | underscore } ]
 	         [ { -co | --color } <color> ] [ -d | --delay <delay> ]
 	         { --demo | <filename> [ <filename ...> ] }
 	
-	-br|--blink-rate  : cursor blink delay after interpunction, in seconds (default: 0.1s)
-	-bt|--blink-times : number of times to blink the cursor after interpunction (default: 2)
+	-br|--blink-rate  : cursor blink delay after interpunction, in seconds
+	                    (default: 0.1s)
+	-bt|--blink-times : number of times to blink the cursor after interpunction
+	                    (default: 2)
 	-d|--delay        : print delay between words, in seconds (default: 0.05s)
-	--demo            : use demo text (default: read text from stdin or <filename>)
+	--demo            : use demo text
+	                    (default: read text from stdin or <filename>)
 	
 	-c|--case         : specify case conversion:
 	                    l | lower      : to lowercase
