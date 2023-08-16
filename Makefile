@@ -32,7 +32,7 @@ $(PROG).$(SECTION): $(PROG)
 	pod2man $(PODOPTS) $< | sed 's/@(#)ms.acc/ms.acc/' > $@
 
 $(PROG).ps: $(PROG).$(SECTION)
-	groff -man -Tps $< > $@
+	groff -man -Tps -P-pa4 $< > $@
 
 $(PROG).pdf: $(PROG).ps
 	ps2pdf $<

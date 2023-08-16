@@ -3,7 +3,7 @@
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
-# Version    : 0.97
+# Version    : 0.98
 # Description: animate text like on a slow phosphorescent CRT terminal
 # Usage      : see manual
 #
@@ -14,8 +14,8 @@
 =pod
 
 =for roff
-.ds Yr 2020-2022
-.ds Vw @(#) phosphor 0.97
+.ds Yr 2020-2023
+.ds Vw @(#) phosphor 0.98
 .de Vp
 This manual pertains to \fBphosphor\fP version \\$3.
 ..
@@ -35,12 +35,12 @@ use IO::Handle;
 use Getopt::Long;
 use Time::HiRes qw(sleep);
 use Term::Terminfo;
-use Term::ANSIColor qw(coloralias colorvalid colorstrip color);
+use Term::ANSIColor qw(coloralias colorstrip);
 
 ################################################################################
 # declarations
 
-my ($RESET, $SMUL, $RMUL, $BOLD, $REVERSE, $CNORM, $CIVIS);
+my ($RESET, $SMUL, $RMUL, $BOLD, $REVERSE, $CNORM, $CIVIS, $DEFAULT, $ON_DEFAULT);
 my $COLUMNS;
 
 my %CASES = qw(
@@ -58,6 +58,10 @@ my %CASES = qw(
 
 sub usage {
 	my $error = shift;
+	#
+	# ATTENTION: careful with spaces and tabs below.
+	# The "Usage" lines should start with one tab and use spaces after that.
+	#
 	my @usage = map { s/^\t/  /g; "$_\n" } split /\n/, <<"	_endUsage_";
 Usage:
 	phosphor [ -br | --blink-rate <delay> ] [ -bt | --blink-times <num> ]
@@ -81,9 +85,10 @@ Usage:
 	                    s | underscore : upper -> underscored; lower -> upper
 	
 	-co|--color       : specify text color: any combination of:
-	                    black  on_black  magenta  on_magenta  yellow  on_yellow
-	                    blue   on_blue   green    on_green    white   on_white
-	                    red    on_red    cyan     on_cyan     amber   on_amber
+	                    black    on_black    blue  on_blue   green  on_green
+	                    yellow   on_yellow   red   on_red    white  on_white
+	                    magenta  on_magenta  cyan  on_cyan   amber  on_amber
+	                    default  on_default
 	
 	_endUsage_
 	if ($error) {
@@ -92,6 +97,35 @@ Usage:
 	} else {
 		print @usage;
 	}
+}
+
+sub color {
+	my ($code) = @_;
+	my $result = '';
+	foreach (split(/\s+/, $code)) {
+		if ($_ eq 'default') {
+			$result .= $DEFAULT;
+		} elsif ($_ eq 'on_default') {
+			$result .= $ON_DEFAULT;
+		} else {
+			$result .= Term::ANSIColor::color($_);
+		}
+	}
+	return $result;
+}
+
+sub colorvalid {
+	my ($code) = @_;
+	foreach (split(/\s+/, $code)) {
+		if (
+			$_ ne 'default' and
+			$_ ne 'on_default' and
+			!Term::ANSIColor::colorvalid($_)
+		) {
+			return 0;
+		}
+	}
+	return 1;
 }
 
 sub getopts {
@@ -105,10 +139,10 @@ sub getopts {
 	GetOptions(
 		'blink-rate|br=f'  => \$blink_rate,
 		'blink-times|bt=f' => \$blink_times,
-		'delay|d=f'        => \$delay,
-		'demo'             => \$demo,
 		'case|c=s'         => \$case,
 		'color|co=s'       => \$color,
+		'delay|d=f'        => \$delay,
+		'demo'             => \$demo,
 	) or usage("Error in command line arguments\n");
 
 	if (!$CASES{$case}) {
@@ -154,13 +188,15 @@ sub resize_handler {
 sub init {
 	my $ti = Term::Terminfo->new();
 
-	$RESET    = $ti->getstr('sgr0' ); # || "\e[m";
-	$SMUL     = $ti->getstr('smul' ); # || "\e[4m";
-	$RMUL     = $ti->getstr('rmul' ); # || "\e[24m";
-	$BOLD     = $ti->getstr('bold' ); # || "\e[1m";
-	$REVERSE  = $ti->getstr('rev'  ); # || "\e[7m";
-	$CNORM    = $ti->getstr('cnorm') || "\e[?12l\e[?25h";
-	$CIVIS    = $ti->getstr('civis') || "\e[?25l";
+	$RESET      = $ti->getstr('sgr0' ); # || "\e[m";
+	$SMUL       = $ti->getstr('smul' ); # || "\e[4m";
+	$RMUL       = $ti->getstr('rmul' ); # || "\e[24m";
+	$BOLD       = $ti->getstr('bold' ); # || "\e[1m";
+	$REVERSE    = $ti->getstr('rev'  ); # || "\e[7m";
+	$CNORM      = $ti->getstr('cnorm') || "\e[?12l\e[?25h";
+	$CIVIS      = $ti->getstr('civis') || "\e[?25l";
+	$DEFAULT    = "\e[39m";
+	$ON_DEFAULT = "\e[49m";
 
 	interrupt_handler();
 	resize_handler();
@@ -363,7 +399,8 @@ Select a color for the text and/or background.
 
 For setting a text color, valid names are those listed in Term::ANSIColor(3pm): black, blue,
 red, magenta, green, cyan, yellow, white. In addition, the color 'amber' is recognized,
-but your terminal needs to support at least 256 colors.
+but your terminal needs to support at least 256 colors. The name 'default' can be used for
+using the terminal default.
 
 For setting a background color, the names listed above can be prefixed with B<on_>. You may
 combine a text and background color as follows: B<--color 'blue on_cyan'>.
