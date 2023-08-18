@@ -29,7 +29,7 @@ mandemo: $(PROG).$(SECTION) ## Animate the manpage
 	@man ./$(PROG).$(SECTION) | ./phosphor --case r --blink-rate 0 --color 'green on_black'
 
 $(PROG).$(SECTION): $(PROG)
-	pod2man $(PODOPTS) $< | sed 's/@(#)ms.acc/ms.acc/' > $@
+	pod2man $(PODOPTS) $< | sed -E -e 's/@.#.ms.acc/ms.acc/' -e 's/(GNU|CRT)/\\s-1\1\\s0/' > $@
 
 $(PROG).ps: $(PROG).$(SECTION)
 	groff -man -Tps -P-pa4 $< > $@
