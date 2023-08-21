@@ -61,7 +61,7 @@
 .if n .ad l
 .nh
 .ds Yr 2020-2023
-.ds Vw @(#) phosphor 0.99
+.ds Vw @(#) phosphor 1.00
 .de us \" underscore string
 \\$1\l'|0\(ul'
 ..
@@ -138,12 +138,12 @@ The delay in (fractional) seconds after print a word highlighted (default: 0.03)
 .IP \fB\-\-demo\fR 4
 .IX Item "--demo"
 Use a fixed demo text. No other input will be read.
-.IP "\fIfilename\fR [ \fIfilename ...\fR ]" 4
-.IX Item "filename [ filename ... ]"
-Files whose content should be displayed. If none are specified, read from standard input.
 .IP "\fB\-o\fR \fIdelay\fR, \fB\-\-off\fR \fIdelay\fR" 4
 .IX Item "-o delay, --off delay"
 The delay in (fractional) seconds after removing highlight from a word (default: 0.03)
+.IP "\fIfilename\fR [ \fIfilename ...\fR ]" 4
+.IX Item "filename [ filename ... ]"
+Files whose content should be displayed. If none are specified, read from standard input.
 .SH EXAMPLES
 .IX Header "EXAMPLES"
 .Vb 1

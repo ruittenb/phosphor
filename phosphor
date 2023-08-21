@@ -3,7 +3,7 @@
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
-# Version    : 0.99
+# Version    : 1.00
 # Description: animate text like on a slow phosphorescent CRT terminal
 # Usage      : see manual
 #
@@ -15,7 +15,7 @@
 
 =for roff
 .ds Yr 2020-2023
-.ds Vw @(#) phosphor 0.99
+.ds Vw @(#) phosphor 1.00
 
 =cut
 
@@ -421,13 +421,13 @@ The delay in (fractional) seconds after print a word highlighted (default: 0.03)
 
 Use a fixed demo text. No other input will be read.
 
-=item I<filename> [ I<filename ...> ]
-
-Files whose content should be displayed. If none are specified, read from standard input.
-
 =item B<-o> I<delay>, B<--off> I<delay>
 
 The delay in (fractional) seconds after removing highlight from a word (default: 0.03)
+
+=item I<filename> [ I<filename ...> ]
+
+Files whose content should be displayed. If none are specified, read from standard input.
 
 =back
 
