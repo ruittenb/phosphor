@@ -3,7 +3,7 @@
 #
 # Name       : phosphor
 # Author     : René Uittenbogaard
-# Version    : 0.98
+# Version    : 0.99
 # Description: animate text like on a slow phosphorescent CRT terminal
 # Usage      : see manual
 #
@@ -15,7 +15,7 @@
 
 =for roff
 .ds Yr 2020-2023
-.ds Vw @(#) phosphor 0.98
+.ds Vw @(#) phosphor 0.99
 
 =cut
 
@@ -64,13 +64,16 @@ Usage:
 	phosphor [ -br | --blink-rate <delay> ] [ -bt | --blink-times <num> ]
 	         [ { -c | --case } { lower | upper | normal | reverse | underscore } ]
 	         [ { -co | --color } <color> ] [ -d | --delay <delay> ]
-	         { --demo | <filename> [ <filename ...> ] }
+	         [ -o | --off <delay> ] { --demo | <filename> [ <filename ...> ] }
 	
 	-br|--blink-rate  : cursor blink delay after interpunction, in seconds
 	                    (default: 0.1s)
 	-bt|--blink-times : number of times to blink the cursor after interpunction
 	                    (default: 2)
-	-d|--delay        : print delay between words, in seconds (default: 0.05s)
+	-d|--delay        : delay after highlighting a word, in seconds
+	                    (default: 0.03s)
+	-o|--off          : delay after removing highlight from a word, in seconds
+	                    (default: 0.03s)
 	--demo            : use demo text
 	                    (default: read text from stdin or <filename>)
 	
@@ -126,8 +129,9 @@ sub colorvalid {
 }
 
 sub getopts {
-	my $delay = 0.05;
-	my $blink_rate = 0.1;
+	my $delay = 0.03;
+	my $off   = 0.03;
+	my $blink_rate  = 0.1;
 	my $blink_times = 2;
 	my $case  = 'upper';
 	my $color = '';
@@ -138,6 +142,7 @@ sub getopts {
 		'blink-times|bt=f' => \$blink_times,
 		'case|c=s'         => \$case,
 		'color|co=s'       => \$color,
+		'off|o=f'          => \$off,
 		'delay|d=f'        => \$delay,
 		'demo'             => \$demo,
 	) or usage("Error in command line arguments\n");
@@ -165,6 +170,7 @@ sub getopts {
 		blink_rate  => $blink_rate,
 		blink_times => $blink_times,
 		delay       => $delay,
+		off         => $off,
 		demo        => $demo,
 		case        => $CASES{$case},
 		color       => color($color) // $RESET,
@@ -239,6 +245,7 @@ sub flash {
 	print "\r$RESET$opts->{color}$leader$BOLD$text";
 	sleep $opts->{delay};
 	print "\r$RESET$opts->{color}$leader$text";
+	sleep $opts->{off};
 	my ($punct) = ($text =~ /([.,!?])\s+$/);
 	if ($punct) {
 		my $blinks = $punct ne ',' ? $blink_times : fmin($blink_times, 1);
@@ -336,6 +343,7 @@ S<< [ { B<-bt> | B<--blink-times> } I<num> ] >>
 S<< [ { B<-c> | B<--case> } I<style> ] >>
 S<< [ { B<-co> | B<--color> } I<colorname> ] >>
 S<< [ B<-d> | B<--delay> I<delay> ] >>
+S<< [ B<-o> | B<--off> I<delay> ] >>
 S<< { B<--demo> | I<filename> [ I<filename> ... ] } >>
 
 =for roff
@@ -407,7 +415,7 @@ The default is no color.  For explicitly not selecting any color, use B<--color 
 
 =item B<-d> I<delay>, B<--delay> I<delay>
 
-The delay in (fractional) seconds between printing words (default: 0.05)
+The delay in (fractional) seconds after print a word highlighted (default: 0.03)
 
 =item B<--demo>
 
@@ -417,15 +425,19 @@ Use a fixed demo text. No other input will be read.
 
 Files whose content should be displayed. If none are specified, read from standard input.
 
+=item B<-o> I<delay>, B<--off> I<delay>
+
+The delay in (fractional) seconds after removing highlight from a word (default: 0.03)
+
 =back
 
 =head1 EXAMPLES
 
 =over 4
 
-  phosphor -d 0.1 --demo
+  ls -l | phosphor -d 0.02
 
-  phosphor -c s -br 0.2 --color 'green on_black' --demo
+  phosphor -c s -br 0.2 -o 0.05 --color 'green on_black' --demo
 
   phosphor -c s -br 0.2 --color 'amber on_black' \
            demo/Adamas-Journal-19-Experiment-in-Terra.txt

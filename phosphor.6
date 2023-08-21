@@ -55,13 +55,13 @@
 .\" ========================================================================
 .\"
 .IX Title "phosphor 6"
-.TH phosphor 6 2023-08-18 " " " "
+.TH phosphor 6 2023-08-21 " " " "
 .\" For nroff, turn off justification.  Always turn off hyphenation; it makes
 .\" way too many mistakes in technical documents.
 .if n .ad l
 .nh
 .ds Yr 2020-2023
-.ds Vw @(#) phosphor 0.98
+.ds Vw @(#) phosphor 0.99
 .de us \" underscore string
 \\$1\l'|0\(ul'
 ..
@@ -77,6 +77,7 @@ phosphor \- display text like on a phosphorescent \s-1CRT\s0 terminal
 [\ {\ \fB\-c\fR\ |\ \fB\-\-case\fR\ }\ \fIstyle\fR\ ]
 [\ {\ \fB\-co\fR\ |\ \fB\-\-color\fR\ }\ \fIcolorname\fR\ ]
 [\ \fB\-d\fR\ |\ \fB\-\-delay\fR\ \fIdelay\fR\ ]
+[\ \fB\-o\fR\ |\ \fB\-\-off\fR\ \fIdelay\fR\ ]
 {\ \fB\-\-demo\fR\ |\ \fIfilename\fR\ [\ \fIfilename\fR\ ...\ ]\ }
 .ad n \" align normal
 .SH DESCRIPTION
@@ -133,19 +134,22 @@ combine a text and background color with a space: \fB\-\-color 'blue on_cyan'\fR
 The default is no color.  For explicitly not selecting any color, use \fB\-\-color ''\fR.
 .IP "\fB\-d\fR \fIdelay\fR, \fB\-\-delay\fR \fIdelay\fR" 4
 .IX Item "-d delay, --delay delay"
-The delay in (fractional) seconds between printing words (default: 0.05)
+The delay in (fractional) seconds after print a word highlighted (default: 0.03)
 .IP \fB\-\-demo\fR 4
 .IX Item "--demo"
 Use a fixed demo text. No other input will be read.
 .IP "\fIfilename\fR [ \fIfilename ...\fR ]" 4
 .IX Item "filename [ filename ... ]"
 Files whose content should be displayed. If none are specified, read from standard input.
+.IP "\fB\-o\fR \fIdelay\fR, \fB\-\-off\fR \fIdelay\fR" 4
+.IX Item "-o delay, --off delay"
+The delay in (fractional) seconds after removing highlight from a word (default: 0.03)
 .SH EXAMPLES
 .IX Header "EXAMPLES"
 .Vb 1
-\&  phosphor \-d 0.1 \-\-demo
+\&  ls \-l | phosphor \-d 0.02
 \&
-\&  phosphor \-c s \-br 0.2 \-\-color \*(Aqgreen on_black\*(Aq \-\-demo
+\&  phosphor \-c s \-br 0.2 \-o 0.05 \-\-color \*(Aqgreen on_black\*(Aq \-\-demo
 \&
 \&  phosphor \-c s \-br 0.2 \-\-color \*(Aqamber on_black\*(Aq \e
 \&           demo/Adamas\-Journal\-19\-Experiment\-in\-Terra.txt
